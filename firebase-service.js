@@ -15,14 +15,22 @@ class FirebaseService {
       if (this.initialized) return true;
 
       // Initialize Firebase Admin with service account
-      const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-      if (!serviceAccountPath) {
-        console.log('⚠️ FIREBASE_SERVICE_ACCOUNT_PATH not set in .env - using mock mode');
+      // Support both: JSON string in env var (for cloud) or file path (for local)
+      let serviceAccount;
+
+      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        // Cloud deployment: JSON string in environment variable
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        console.log('🔐 Using Firebase credentials from environment variable');
+      } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+        // Local development: file path
+        serviceAccount = JSON.parse(readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8'));
+        console.log('📁 Using Firebase credentials from file');
+      } else {
+        console.log('⚠️ No Firebase credentials found - using mock mode');
         this.initialized = true;
         return false;
       }
-
-      const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
 
       // Check if app already exists
       let app;
