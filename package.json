@@ -2,10 +2,10 @@
   "name": "stream-launch-coin-creator",
   "version": "1.0.0",
   "description": "Live stream coin creation system for Solana pump.fun integration",
-  "main": "launcher.js",
+  "main": "dashboard-server.js",
   "type": "module",
   "scripts": {
-    "start": "node launcher.js",
+    "start": "node dashboard-server.js",
     "chat": "node coin-launcher.js",
     "dashboard": "node dashboard-server.js",
     "monitor": "node market-monitor.js",
