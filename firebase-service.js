@@ -1,3 +1,4 @@
+// Firebase Realtime Database service for Pump Live Pad
 import admin from 'firebase-admin';
 import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
