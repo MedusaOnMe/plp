@@ -4,6 +4,10 @@ node_modules/
 # Environment variables (contains secrets!)
 .env
 
+# Music files (local only)
+music/
+*.mp3
+
 # Firebase service account (contains secrets!)
 *.json
 !package.json
