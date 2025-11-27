@@ -1,0 +1,41 @@
+{
+  "name": "stream-launch-coin-creator",
+  "version": "1.0.0",
+  "description": "Live stream coin creation system for Solana pump.fun integration",
+  "main": "launcher.js",
+  "type": "module",
+  "scripts": {
+    "start": "node launcher.js",
+    "chat": "node coin-launcher.js",
+    "dashboard": "node dashboard-server.js",
+    "monitor": "node market-monitor.js",
+    "dev": "concurrently \"npm run dashboard\" \"npm run monitor\"",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "solana",
+    "pump.fun",
+    "cryptocurrency",
+    "livestream",
+    "token-creation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.87.6",
+    "dotenv": "^17.2.2",
+    "express": "^4.18.2",
+    "firebase-admin": "^13.5.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "playwright": "^1.40.1",
+    "socket.io-client": "^4.8.1",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

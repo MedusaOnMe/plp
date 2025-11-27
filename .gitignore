@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains secrets!)
+.env
+
+# Firebase service account (contains secrets!)
+*.json
+!package.json
+!package-lock.json
+
+# Temp files
+temp/
+
+# Log files
+*.log
+chat-*.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Local data files
+launched-coins.json
+launched-users.json
