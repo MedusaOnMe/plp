@@ -391,7 +391,8 @@ class DashboardServer {
 }
 
 // Create and start server
-const server = new DashboardServer(3000);
+const port = process.env.PORT || 3000;
+const server = new DashboardServer(port);
 server.start();
 
 // Make server accessible globally for coin launcher
