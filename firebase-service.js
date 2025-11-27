@@ -9,51 +9,41 @@ class FirebaseService {
   constructor() {
     this.db = null;
     this.initialized = false;
+    this.coinsCache = null;
+    this.coinsCacheTime = 0;
+    this.cacheTTL = 5000; // 5 second cache
   }
 
   async initialize() {
     try {
       if (this.initialized) return true;
 
-      // Initialize Firebase Admin with service account
-      // Support both: JSON string in env var (for cloud) or file path (for local)
       let serviceAccount;
 
       if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        // Cloud deployment: JSON string in environment variable
         serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        console.log('🔐 Using Firebase credentials from environment variable');
       } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-        // Local development: file path
         serviceAccount = JSON.parse(readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8'));
-        console.log('📁 Using Firebase credentials from file');
       } else {
-        console.log('⚠️ No Firebase credentials found - using mock mode');
         this.initialized = true;
         return false;
       }
 
-      // Check if app already exists
       let app;
       try {
         app = admin.app();
-        console.log('♻️ Using existing Firebase app');
       } catch (error) {
-        // App doesn't exist, create new one
         app = admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
           databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`
         });
-        console.log('🆕 Created new Firebase app');
       }
 
       this.db = admin.database();
       this.initialized = true;
-      console.log('✅ Firebase initialized successfully');
       return true;
     } catch (error) {
-      console.error('❌ Failed to initialize Firebase:', error.message);
-      this.initialized = true; // Mark as initialized to avoid retry loops
+      this.initialized = true;
       return false;
     }
   }
@@ -61,10 +51,7 @@ class FirebaseService {
   async addCoin(contractAddress, coinData) {
     await this.initialize();
 
-    if (!this.db) {
-      console.log('📝 Mock: Adding coin to Firebase:', contractAddress);
-      return true;
-    }
+    if (!this.db) return true;
 
     try {
       const coinRef = this.db.ref(`coins/${contractAddress}`);
@@ -83,10 +70,10 @@ class FirebaseService {
         lastUpdated: new Date().toISOString()
       });
 
-      console.log(`✅ Added coin ${contractAddress} to Firebase`);
+      // Invalidate cache
+      this.coinsCache = null;
       return true;
     } catch (error) {
-      console.error('❌ Failed to add coin to Firebase:', error.message);
       return false;
     }
   }
@@ -94,9 +81,11 @@ class FirebaseService {
   async getAllCoins() {
     await this.initialize();
 
-    if (!this.db) {
-      // Return empty array when Firebase not connected
-      return [];
+    if (!this.db) return [];
+
+    // Return cached data if fresh
+    if (this.coinsCache && (Date.now() - this.coinsCacheTime) < this.cacheTTL) {
+      return this.coinsCache;
     }
 
     try {
@@ -104,20 +93,19 @@ class FirebaseService {
       const snapshot = await coinsRef.once('value');
       const data = snapshot.val();
 
-      if (!data) {
-        console.log('📊 No coins found in Firebase');
-        return [];
-      }
+      if (!data) return [];
 
       const coins = Object.keys(data).map(key => ({
         id: key,
         ...data[key]
       }));
 
-      console.log(`📊 Retrieved ${coins.length} coins from Firebase`);
+      // Update cache
+      this.coinsCache = coins;
+      this.coinsCacheTime = Date.now();
+
       return coins;
     } catch (error) {
-      console.error('❌ Failed to get coins from Firebase:', error.message);
       return [];
     }
   }
@@ -125,18 +113,14 @@ class FirebaseService {
   async removeCoin(contractAddress) {
     await this.initialize();
 
-    if (!this.db) {
-      console.log('📝 Mock: Removing coin from Firebase:', contractAddress);
-      return true;
-    }
+    if (!this.db) return true;
 
     try {
       const coinRef = this.db.ref(`coins/${contractAddress}`);
       await coinRef.remove();
-      console.log(`✅ Removed coin ${contractAddress} from Firebase`);
+      this.coinsCache = null;
       return true;
     } catch (error) {
-      console.error('❌ Failed to remove coin from Firebase:', error.message);
       return false;
     }
   }
@@ -144,10 +128,7 @@ class FirebaseService {
   async updateCoinData(contractAddress, updateData) {
     await this.initialize();
 
-    if (!this.db) {
-      console.log('📝 Mock: Updating coin in Firebase:', contractAddress);
-      return true;
-    }
+    if (!this.db) return true;
 
     try {
       const coinRef = this.db.ref(`coins/${contractAddress}`);
@@ -156,10 +137,9 @@ class FirebaseService {
         lastUpdated: new Date().toISOString()
       });
 
-      console.log(`✅ Updated coin ${contractAddress} in Firebase`);
+      this.coinsCache = null;
       return true;
     } catch (error) {
-      console.error('❌ Failed to update coin in Firebase:', error.message);
       return false;
     }
   }
@@ -167,10 +147,7 @@ class FirebaseService {
   async updateGlobalStats(stats) {
     await this.initialize();
 
-    if (!this.db) {
-      console.log('📝 Mock: Updating global stats in Firebase');
-      return true;
-    }
+    if (!this.db) return true;
 
     try {
       const statsRef = this.db.ref('globalStats');
@@ -179,10 +156,8 @@ class FirebaseService {
         lastUpdated: new Date().toISOString()
       });
 
-      console.log('✅ Updated global stats in Firebase');
       return true;
     } catch (error) {
-      console.error('❌ Failed to update global stats in Firebase:', error.message);
       return false;
     }
   }
@@ -217,7 +192,6 @@ class FirebaseService {
 
       return data;
     } catch (error) {
-      console.error('❌ Failed to get global stats from Firebase:', error.message);
       return {
         totalCoins: 0,
         totalMarketCap: 0,
@@ -231,10 +205,7 @@ class FirebaseService {
   async addActivity(message, type = 'info') {
     await this.initialize();
 
-    if (!this.db) {
-      console.log('📝 Mock: Adding activity to Firebase');
-      return true;
-    }
+    if (!this.db) return true;
 
     try {
       const activityRef = this.db.ref('activity').push();
@@ -244,7 +215,17 @@ class FirebaseService {
         timestamp: new Date().toISOString()
       });
 
-      // Keep only last 100 activities
+      // Keep only last 100 activities (async cleanup)
+      this.cleanupActivity();
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async cleanupActivity() {
+    try {
       const allActivityRef = this.db.ref('activity');
       const snapshot = await allActivityRef.orderByChild('timestamp').once('value');
       const activities = snapshot.val();
@@ -257,20 +238,15 @@ class FirebaseService {
           }
         }
       }
-
-      return true;
     } catch (error) {
-      console.error('❌ Failed to add activity to Firebase:', error.message);
-      return false;
+      // Silent fail for cleanup
     }
   }
 
   async getRecentActivity(limit = 50) {
     await this.initialize();
 
-    if (!this.db) {
-      return [];
-    }
+    if (!this.db) return [];
 
     try {
       const activityRef = this.db.ref('activity');
@@ -283,7 +259,6 @@ class FirebaseService {
         .map(key => ({ id: key, ...data[key] }))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } catch (error) {
-      console.error('❌ Failed to get activity from Firebase:', error.message);
       return [];
     }
   }
@@ -292,12 +267,10 @@ class FirebaseService {
     await this.initialize();
 
     if (!this.db) {
-      console.log('📝 Mock: Checking rate limit for user');
       return { allowed: true, message: 'Mock mode - rate limit check bypassed' };
     }
 
     try {
-      // Get all coins created by this user
       const coinsRef = this.db.ref('coins');
       const snapshot = await coinsRef.orderByChild('creator').equalTo(username).once('value');
       const userCoins = snapshot.val();
@@ -306,7 +279,6 @@ class FirebaseService {
         return { allowed: true, message: 'User has not created any coins yet' };
       }
 
-      // Check if any coin was created in the last 5 minutes
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
       for (const contractAddress in userCoins) {
@@ -325,7 +297,6 @@ class FirebaseService {
 
       return { allowed: true, message: 'User is within rate limit' };
     } catch (error) {
-      console.error('❌ Failed to check user rate limit:', error.message);
       return { allowed: false, message: 'Error checking rate limit' };
     }
   }

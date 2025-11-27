@@ -1296,7 +1296,6 @@
                     this.ws = new WebSocket(`${protocol}//${window.location.host}`);
 
                     this.ws.onopen = () => {
-                        console.log('🟢 WebSocket connected');
                         this.reconnectAttempts = 0;
                     };
 
@@ -1304,21 +1303,15 @@
                         try {
                             const message = JSON.parse(event.data);
                             this.handleWebSocketMessage(message);
-                        } catch (error) {
-                            console.error('Error parsing WebSocket message:', error);
-                        }
+                        } catch (error) {}
                     };
 
-                    this.ws.onerror = (error) => {
-                        console.error('🔴 WebSocket error:', error);
-                    };
+                    this.ws.onerror = () => {};
 
                     this.ws.onclose = () => {
-                        console.log('🔴 WebSocket disconnected');
                         this.scheduleReconnect();
                     };
                 } catch (error) {
-                    console.error('Failed to connect WebSocket:', error);
                     this.scheduleReconnect();
                 }
             }
@@ -1328,23 +1321,17 @@
                     this.reconnectAttempts++;
                     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
 
-                    console.log(`Attempting to reconnect in ${delay/1000}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-
                     setTimeout(() => {
                         this.connectWebSocket();
                     }, delay);
-                } else {
-                    console.log('Max reconnection attempts reached. Please refresh the page.');
                 }
             }
 
             handleWebSocketMessage(message) {
                 if (message.type === 'init' || message.type === 'update') {
                     this.updateCoins(message.data.coins || []);
-
                 } else if (message.type === 'new_coin') {
                     this.addNewCoin(message.data);
-                    console.log('🆕 New token created:', message.data.name);
                 } else if (message.type === 'activity') {
                     this.addActivityItem(message.data);
                 }
@@ -1357,9 +1344,7 @@
                         const coins = await response.json();
                         this.updateCoins(coins);
                     }
-                } catch (error) {
-                    console.error('Error loading initial data:', error);
-                }
+                } catch (error) {}
             }
 
             async loadInitialActivity() {
@@ -1367,7 +1352,6 @@
                     const response = await fetch('/api/activity');
                     if (response.ok) {
                         const activities = await response.json();
-                        // Reverse so oldest gets added first, newest ends up on top
                         activities.reverse().forEach(activity => {
                             this.addActivityItem({
                                 message: activity.message,
@@ -1376,27 +1360,13 @@
                             });
                         });
                     }
-                } catch (error) {
-                    console.error('Error loading initial activity:', error);
-                }
+                } catch (error) {}
             }
 
             updateCoins(newCoins) {
-                const previousCount = this.coins.length;
                 this.coins = Array.isArray(newCoins) ? newCoins : [];
-
                 this.updateStats();
                 this.renderCoins();
-
-                // Check for new coins and log
-                if (this.coins.length > previousCount) {
-                    const newCoinCount = this.coins.length - previousCount;
-                    if (previousCount > 0) {
-                        console.log(`🆕 ${newCoinCount} new token${newCoinCount > 1 ? 's' : ''} added`);
-                    }
-                }
-
-                // Store current count for real-time detection
                 this.lastCoinCount = this.coins.length;
             }
 
@@ -1418,13 +1388,10 @@
             }
 
             async updateStats() {
-                // Get stats from API endpoint (computed in Firebase)
                 try {
                     const response = await fetch('/api/stats');
                     if (response.ok) {
                         const stats = await response.json();
-
-                        // Update all total coins stats
                         const totalCoins = stats.totalCoins || 0;
                         const elements = ['totalCoins', 'sidebarTotalCoins', 'topTotalCoins', 'totalTokensDisplay'];
                         elements.forEach(id => {
@@ -1432,9 +1399,7 @@
                             if (el) el.textContent = totalCoins;
                         });
                     }
-                } catch (error) {
-                    console.error('Error fetching stats:', error);
-                }
+                } catch (error) {}
             }
 
             formatCurrency(value) {
@@ -1449,10 +1414,6 @@
 
             renderCoins() {
                 const coinsTableBody = document.getElementById('coinsTableBody');
-
-                // LOG DASHBOARD DATA
-                console.log('🖥️ DASHBOARD RENDERING COINS:');
-                console.log(JSON.stringify(this.coins, null, 2));
 
                 if (this.coins.length === 0) {
                     coinsTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No tokens created yet. Waiting for /launch commands...</td></tr>';
