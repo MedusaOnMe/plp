@@ -1608,6 +1608,54 @@
         document.addEventListener('DOMContentLoaded', () => {
             new DashboardManager();
         });
+
+        // Music player - LOCAL ONLY
+        class MusicPlayer {
+            constructor() {
+                // Only run on localhost
+                if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+                    console.log('Music player disabled (not localhost)');
+                    return;
+                }
+
+                this.tracks = [1, 2, 3, 4, 5, 6, 7, 8];
+                this.currentIndex = 0;
+                this.audio = new Audio();
+                this.audio.volume = 0.3;
+
+                this.audio.addEventListener('ended', () => this.playNext());
+                this.audio.addEventListener('error', () => this.playNext());
+
+                // Shuffle and start
+                this.shuffle();
+                this.play();
+            }
+
+            shuffle() {
+                for (let i = this.tracks.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.tracks[i], this.tracks[j]] = [this.tracks[j], this.tracks[i]];
+                }
+            }
+
+            play() {
+                const track = this.tracks[this.currentIndex];
+                this.audio.src = `/music/${track}.mp3`;
+                this.audio.play().catch(() => {
+                    // Autoplay blocked, try next on user interaction
+                    document.addEventListener('click', () => this.audio.play(), { once: true });
+                });
+            }
+
+            playNext() {
+                this.currentIndex = (this.currentIndex + 1) % this.tracks.length;
+                if (this.currentIndex === 0) this.shuffle();
+                this.play();
+            }
+        }
+
+        // Start music player
+        new MusicPlayer();
     </script>
 </body>
 </html>
