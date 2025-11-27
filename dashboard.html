@@ -51,8 +51,10 @@
             margin: 0;
             padding: 0;
             line-height: 1.5;
-            width: 2560px;
-            height: 1440px;
+            width: 100vw;
+            height: 100vh;
+            min-width: 1200px;
+            min-height: 700px;
         }
 
         @keyframes gradientShift {
@@ -356,10 +358,10 @@
             margin-left: 300px;
             margin-top: 80px;
             padding: 1.5rem;
-            width: calc(2560px - 300px);
-            height: calc(1440px - 80px);
+            width: calc(100vw - 300px);
+            height: calc(100vh - 80px);
             display: grid;
-            grid-template-columns: 1fr 500px;
+            grid-template-columns: 1fr minmax(400px, 500px);
             grid-template-rows: 200px 1fr;
             gap: 1.5rem;
             grid-template-areas:
@@ -479,7 +481,7 @@
             white-space: nowrap;
         }
 
-        /* Large Coin Table for 1440p */
+        /* Large Coin Table */
         .coins-list {
             background: linear-gradient(135deg, var(--surface-primary), var(--surface-secondary));
             border: 2px solid var(--purple-primary);
@@ -489,7 +491,7 @@
                 0 8px 25px rgba(0, 0, 0, 0.3),
                 0 0 20px rgba(99, 102, 241, 0.2);
             backdrop-filter: blur(10px);
-            height: calc(1440px - 80px - 200px - 3rem - 4rem);
+            height: calc(100vh - 80px - 200px - 3rem - 8rem);
         }
 
         .coins-table {
@@ -499,7 +501,7 @@
 
         .coins-table tbody {
             display: block;
-            height: calc(1040px - 60px);
+            height: calc(100% - 60px);
             overflow-y: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -805,13 +807,13 @@
         }
 
 
-        /* Large Activity Feed for 1440p */
+        /* Large Activity Feed */
         .live-activity {
             background: linear-gradient(135deg, var(--surface-primary), var(--surface-secondary));
             border: 2px solid var(--purple-primary);
             border-radius: 16px;
             overflow: hidden;
-            height: calc(1440px - 80px - 3rem);
+            height: calc(100vh - 80px - 3rem - 4rem);
             display: flex;
             flex-direction: column;
             box-shadow:
@@ -1103,12 +1105,7 @@
             margin-bottom: 1rem;
         }
 
-        /* 1440p Optimized Layout */
-        body {
-            width: 2560px !important;
-            height: 1440px !important;
-            overflow: hidden;
-        }
+        /* Responsive Layout */
 
         /* Launch Instructions Styling */
         .launch-command {
